@@ -1,0 +1,9 @@
+**/.git
+**/.vs
+**/node_modules
+**/bin
+**/obj
+**/.env
+deploy.zip
+publish/
+src/PrivateInsta.Web/dist/

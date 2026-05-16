@@ -1,0 +1,6 @@
+@PrivateInsta.Api_HostAddress = http://localhost:5226
+
+GET {{PrivateInsta.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

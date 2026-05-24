@@ -67,6 +67,9 @@ public class ChatsController(AppDbContext db, BlobStorageService blob) : Control
     {
         if (!await IsMemberAsync(id)) return Forbid();
 
+        if (!await db.Users.AnyAsync(u => u.Id == req.UserId))
+            return NotFound("User not found.");
+
         if (await db.ChatGroupMembers.AnyAsync(m => m.ChatGroupId == id && m.UserId == req.UserId))
             return Conflict("User is already a member.");
 

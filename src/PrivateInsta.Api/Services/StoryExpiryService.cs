@@ -28,7 +28,7 @@ public class StoryExpiryService(IServiceScopeFactory scopeFactory, ILogger<Story
 
         foreach (var story in expired)
         {
-            try { await blob.DeleteAsync($"stories/{story.Id}", ct); }
+            try { if (story.MediaUrl is not null) await blob.DeleteAsync(story.MediaUrl, ct); }
             catch (Exception ex) { logger.LogWarning(ex, "Failed to delete blob for story {Id}", story.Id); }
         }
 

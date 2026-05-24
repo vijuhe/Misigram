@@ -18,9 +18,8 @@ public class AuthController(AppDbContext db, BlobStorageService blob) : Controll
     [HttpGet("login")]
     public IActionResult Login([FromQuery] string? returnUrl = "/")
     {
-        // RedirectUri is where the user lands after successful OAuth — the frontend root.
-        // The actual OAuth callback (/api/auth/callback) is handled by the Google middleware.
-        var props = new AuthenticationProperties { RedirectUri = returnUrl ?? "/" };
+        if (!Url.IsLocalUrl(returnUrl)) returnUrl = "/";
+        var props = new AuthenticationProperties { RedirectUri = returnUrl };
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }
 

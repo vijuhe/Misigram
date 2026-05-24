@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PrivateInsta.Api.Models;
 
 public enum MediaType { Photo, Video }
@@ -10,7 +12,7 @@ public class Post
     public string? MediaUrl { get; set; }
     public string? ThumbnailUrl { get; set; }
     public MediaType MediaType { get; set; }
-    public string? Caption { get; set; }
+    [MaxLength(2200)] public string? Caption { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();

@@ -24,7 +24,7 @@ builder.Services.AddAuthentication(o =>
 {
     o.Cookie.HttpOnly = true;
     o.Cookie.SameSite = SameSiteMode.Lax;
-    o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     o.Events.OnRedirectToLogin = ctx =>
     {
         ctx.Response.StatusCode = 401;

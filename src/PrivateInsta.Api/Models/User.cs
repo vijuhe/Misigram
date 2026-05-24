@@ -1,13 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace PrivateInsta.Api.Models;
 
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string GoogleId { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
+    [MaxLength(255)] public string GoogleId { get; set; } = string.Empty;
+    [MaxLength(255)] public string Email { get; set; } = string.Empty;
+    [MaxLength(100)] public string DisplayName { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
-    public string? Bio { get; set; }
+    [MaxLength(500)] public string? Bio { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Post> Posts { get; set; } = new List<Post>();

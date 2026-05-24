@@ -28,6 +28,7 @@ public class ChatHub(AppDbContext db, BlobStorageService blob) : Hub
     public async Task SendMessage(Guid chatGroupId, string content)
     {
         if (!await IsMemberAsync(chatGroupId)) return;
+        if (string.IsNullOrWhiteSpace(content) || content.Length > 2000) return;
 
         var message = new Message
         {

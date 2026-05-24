@@ -47,6 +47,8 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
     }
 
     [HttpPost]
+    [RequestSizeLimit(104_857_600)] // 100 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
     public async Task<ActionResult<PostDto>> Create([FromForm] string? caption, IFormFile? file)
     {
         if (file is null && string.IsNullOrWhiteSpace(caption))

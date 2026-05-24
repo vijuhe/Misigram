@@ -49,6 +49,8 @@ public class UsersController(AppDbContext db, BlobStorageService blob) : Control
     }
 
     [HttpPost("me/avatar")]
+    [RequestSizeLimit(2_097_152)] // 2 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 2_097_152)]
     public async Task<ActionResult<UserDto>> UploadAvatar(IFormFile file)
     {
         if (file.Length == 0) return BadRequest("No file provided.");

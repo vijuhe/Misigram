@@ -35,6 +35,8 @@ public class StoriesController(AppDbContext db, BlobStorageService blob) : Contr
     }
 
     [HttpPost]
+    [RequestSizeLimit(104_857_600)] // 100 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
     public async Task<ActionResult<StoryDto>> Create(IFormFile file)
     {
         if (file.Length == 0) return BadRequest("No file provided.");
@@ -69,7 +71,7 @@ public class StoriesController(AppDbContext db, BlobStorageService blob) : Contr
         if (story is null) return NotFound();
         if (story.UserId != CurrentUserId) return Forbid();
 
-        await blob.DeleteAsync($"stories/{story.Id}");
+        if (story.MediaUrl is not null) await blob.DeleteAsync(story.MediaUrl);
         db.Stories.Remove(story);
         await db.SaveChangesAsync();
         return NoContent();

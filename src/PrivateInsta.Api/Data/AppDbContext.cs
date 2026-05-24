@@ -4,10 +4,10 @@ using PrivateInsta.Api.Models;
 
 namespace PrivateInsta.Api.Data;
 
-// EF Core reads DateTime from SQL Server as Unspecified kind; this converter
-// tags every value as UTC so System.Text.Json serializes it with the Z suffix.
+// Npgsql requires DateTimeKind.Utc for timestamptz columns; this converter
+// enforces it on both read and write so System.Text.Json also serializes with Z.
 file sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
-    v => v,
+    v => DateTime.SpecifyKind(v, DateTimeKind.Utc),
     v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -49,9 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(s => s.ExpiresAt);
         });
 
-        // SQL Server disallows multiple cascade paths to the same table.
-        // Restrict delete on all User FK relationships so cascades only flow
-        // from Post → Comments/Likes, not from User → Comments/Likes directly.
+        // Restrict FK deletes on User so cascade paths don't conflict.
         b.Entity<Comment>()
             .HasOne(c => c.User).WithMany(u => u.Comments)
             .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);

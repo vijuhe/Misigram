@@ -5,12 +5,9 @@ param appName string
 @description('Azure region for all resources.')
 param location string = resourceGroup().location
 
-@description('SQL Server administrator login.')
-param sqlAdminLogin string
-
-@description('SQL Server administrator password.')
+@description('Neon PostgreSQL connection string.')
 @secure()
-param sqlAdminPassword string
+param neonConnectionString string
 
 @description('Google OAuth Client ID.')
 @secure()
@@ -22,44 +19,6 @@ param googleClientSecret string
 
 @description('Google accounts allowed to log in.')
 param allowedGoogleAccounts array
-
-// ── SQL Server ────────────────────────────────────────────────────────────────
-
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
-  name: '${appName}-sql'
-  location: location
-  properties: {
-    administratorLogin: sqlAdminLogin
-    administratorLoginPassword: sqlAdminPassword
-    minimalTlsVersion: '1.2'
-  }
-}
-
-resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-preview' = {
-  parent: sqlServer
-  name: 'AllowAllWindowsAzureIps'
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
-  }
-}
-
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
-  parent: sqlServer
-  name: '${appName}-db'
-  location: location
-  sku: {
-    name: 'GP_S_Gen5_1'
-    tier: 'GeneralPurpose'
-    family: 'Gen5'
-    capacity: 1
-  }
-  properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    autoPauseDelay: 60
-    minCapacity: 1
-  }
-}
 
 // ── Storage Account ───────────────────────────────────────────────────────────
 
@@ -127,8 +86,6 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   }
 }
 
-var sqlConnectionString = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabase.name};Persist Security Info=False;User ID=${sqlAdminLogin};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
-
 var storageConnection = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 
 var allowedAccountEnvVars = [for (email, i) in allowedGoogleAccounts: {
@@ -138,7 +95,7 @@ var allowedAccountEnvVars = [for (email, i) in allowedGoogleAccounts: {
 
 var baseEnvVars = [
   { name: 'ASPNETCORE_ENVIRONMENT',                   value: 'Production' }
-  { name: 'ConnectionStrings__DefaultConnection',     secretRef: 'sql-connection' }
+  { name: 'ConnectionStrings__DefaultConnection',     secretRef: 'neon-connection' }
   { name: 'BlobStorage__Connection',                  secretRef: 'storage-connection' }
   { name: 'BlobStorage__ContainerName',               value: 'media' }
   { name: 'Authentication__Google__ClientId',          secretRef: 'google-client-id' }
@@ -154,7 +111,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       activeRevisionsMode: 'Single'
       secrets: [
-        { name: 'sql-connection',       value: sqlConnectionString }
+        { name: 'neon-connection',      value: neonConnectionString }
         { name: 'storage-connection',   value: storageConnection }
         { name: 'google-client-id',     value: googleClientId }
         { name: 'google-client-secret', value: googleClientSecret }
@@ -197,7 +154,6 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 // ── Outputs ───────────────────────────────────────────────────────────────────
 
 output appUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
-output sqlServerFqdn string = sqlServer.properties.fullyQualifiedDomainName
 output storageAccountName string = storageAccount.name
 output acrLoginServer string = acr.properties.loginServer
 output acrName string = acr.name

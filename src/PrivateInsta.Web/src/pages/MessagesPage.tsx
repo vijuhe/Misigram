@@ -6,6 +6,7 @@ import { PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { chats as chatsApi, users as usersApi } from '../api';
 import { useAuth } from '../AuthContext';
 import { Avatar } from '../components/Avatar';
+import { Spinner } from '../components/Spinner';
 import type { ChatGroup, User } from '../types';
 
 export function MessagesPage() {
@@ -17,7 +18,7 @@ export function MessagesPage() {
   const [creating, setCreating] = useState(false);
 
   const navigate = useNavigate();
-  const { data: chatList } = useQuery({ queryKey: ['chats'], queryFn: chatsApi.list });
+  const { data: chatList, isLoading } = useQuery({ queryKey: ['chats'], queryFn: chatsApi.list });
   const { data: allUsers } = useQuery({ queryKey: ['users'], queryFn: usersApi.list, enabled: showNew });
 
   const otherUsers = allUsers?.filter(u => u.id !== me?.id) ?? [];
@@ -69,7 +70,8 @@ export function MessagesPage() {
         </button>
       </div>
 
-      {chatList?.length === 0 && <p className="text-gray-400 text-sm">No conversations yet.</p>}
+      {isLoading && <Spinner />}
+      {!isLoading && chatList?.length === 0 && <p className="text-gray-400 text-sm">No conversations yet.</p>}
 
       <div className="space-y-1">
         {chatList?.map(g => (

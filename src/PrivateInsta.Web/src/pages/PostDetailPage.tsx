@@ -7,6 +7,8 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { posts as postsApi } from '../api';
 import { useAuth } from '../AuthContext';
 import { Avatar } from '../components/Avatar';
+import { Spinner } from '../components/Spinner';
+import type { PagedResult, Post } from '../types';
 
 export function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +16,9 @@ export function PostDetailPage() {
   const qc = useQueryClient();
   const [comment, setComment] = useState('');
 
-  const { data: post, refetch } = useQuery({
+  const [liking, setLiking] = useState(false);
+
+  const { data: post, isLoading, refetch } = useQuery({
     queryKey: ['post', id],
     queryFn: () => postsApi.get(id!),
     enabled: !!id,
@@ -26,12 +30,29 @@ export function PostDetailPage() {
     enabled: !!id,
   });
 
+  if (isLoading) return <Spinner />;
   if (!post) return null;
 
   const handleLike = async () => {
-    await postsApi.toggleLike(post.id);
-    refetch();
-    qc.invalidateQueries({ queryKey: ['feed'] });
+    if (liking) return;
+    setLiking(true);
+    const optimistic: Post = {
+      ...post,
+      likedByMe: !post.likedByMe,
+      likeCount: post.likedByMe ? post.likeCount - 1 : post.likeCount + 1,
+    };
+    qc.setQueryData(['post', id], optimistic);
+    qc.setQueryData<PagedResult<Post>>(['feed'], old =>
+      old ? { ...old, items: old.items.map(p => p.id === post.id ? optimistic : p) } : old
+    );
+    try {
+      await postsApi.toggleLike(post.id);
+    } catch {
+      qc.setQueryData(['post', id], post);
+      qc.invalidateQueries({ queryKey: ['feed'] });
+    } finally {
+      setLiking(false);
+    }
   };
 
   const handleComment = async (e: React.FormEvent) => {
@@ -41,12 +62,14 @@ export function PostDetailPage() {
     setComment('');
     refetchComments();
     refetch();
+    qc.invalidateQueries({ queryKey: ['feed'] });
   };
 
   const handleDeleteComment = async (commentId: string) => {
     await postsApi.deleteComment(post.id, commentId);
     refetchComments();
     refetch();
+    qc.invalidateQueries({ queryKey: ['feed'] });
   };
 
   return (

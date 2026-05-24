@@ -2,17 +2,19 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { users as usersApi } from '../api';
 import { Avatar } from '../components/Avatar';
+import { Spinner } from '../components/Spinner';
 import { useAuth } from '../AuthContext';
 
 export function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user: me } = useAuth();
 
-  const { data: user } = useQuery({ queryKey: ['user', id], queryFn: () => usersApi.get(id!), enabled: !!id });
+  const { data: user, isLoading } = useQuery({ queryKey: ['user', id], queryFn: () => usersApi.get(id!), enabled: !!id });
   const { data: postsData } = useQuery({ queryKey: ['userPosts', id], queryFn: () => usersApi.posts(id!), enabled: !!id });
 
   const userPosts = postsData?.items ?? [];
 
+  if (isLoading) return <Spinner />;
   if (!user) return null;
 
   return (

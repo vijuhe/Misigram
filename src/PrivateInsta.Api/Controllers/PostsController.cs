@@ -102,6 +102,11 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
 
         db.Posts.Remove(post);
         await db.SaveChangesAsync();
+
+        if (post.MediaUrl is not null) await blob.DeleteAsync(post.MediaUrl);
+        if (post.ThumbnailUrl is not null && post.ThumbnailUrl != post.MediaUrl)
+            await blob.DeleteAsync(post.ThumbnailUrl);
+
         return NoContent();
     }
 

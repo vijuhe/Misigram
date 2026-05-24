@@ -21,7 +21,7 @@ export function ChatPage() {
 
   const { data: chat } = useQuery({
     queryKey: ['chat', chatId],
-    queryFn: () => qc.getQueryData<Awaited<ReturnType<typeof chatsApi.list>>>(['chats'])?.find(c => c.id === chatId),
+    queryFn: () => chatsApi.get(chatId!),
     enabled: !!chatId,
   });
 

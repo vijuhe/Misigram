@@ -30,8 +30,7 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
             .ToListAsync();
 
         var me = CurrentUserId;
-        var dtos = posts.Select(p => ToDto(p, me));
-        return Ok(new PagedResult<PostDto>(dtos, total, page, size));
+        return Ok(new PagedResult<PostDto>(posts.Select(p => p.ToDto(blob, me)), total, page, size));
     }
 
     [HttpGet("{id:guid}")]
@@ -43,7 +42,7 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
             .Include(p => p.Comments)
             .FirstOrDefaultAsync(p => p.Id == id);
 
-        return post is null ? NotFound() : Ok(ToDto(post, CurrentUserId));
+        return post is null ? NotFound() : Ok(post.ToDto(blob, CurrentUserId));
     }
 
     [HttpPost]
@@ -91,7 +90,7 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
         await db.SaveChangesAsync();
 
         await db.Entry(post).Reference(p => p.User).LoadAsync();
-        return CreatedAtAction(nameof(GetById), new { id = post.Id }, ToDto(post, CurrentUserId));
+        return CreatedAtAction(nameof(GetById), new { id = post.Id }, post.ToDto(blob, CurrentUserId));
     }
 
     [HttpDelete("{id:guid}")]
@@ -115,7 +114,7 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
-        return Ok(comments.Select(c => new CommentDto(c.Id, UserToDto(c.User), c.Content, c.CreatedAt)));
+        return Ok(comments.Select(c => new CommentDto(c.Id, c.User.ToDto(blob), c.Content, c.CreatedAt)));
     }
 
     [HttpPost("{id:guid}/comments")]
@@ -129,7 +128,7 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
         await db.Entry(comment).Reference(c => c.User).LoadAsync();
 
         return CreatedAtAction(nameof(GetComments), new { id },
-            new CommentDto(comment.Id, UserToDto(comment.User), comment.Content, comment.CreatedAt));
+            new CommentDto(comment.Id, comment.User.ToDto(blob), comment.Content, comment.CreatedAt));
     }
 
     [HttpDelete("{id:guid}/comments/{commentId:guid}")]
@@ -167,18 +166,4 @@ public class PostsController(AppDbContext db, BlobStorageService blob) : Control
         return Ok(new { liked });
     }
 
-    private PostDto ToDto(Post p, Guid me) => new(
-        p.Id,
-        UserToDto(p.User),
-        blob.ResolveSasUrl(p.MediaUrl),
-        blob.ResolveSasUrl(p.ThumbnailUrl),
-        p.MediaType,
-        p.Caption,
-        p.Likes.Count,
-        p.Comments.Count,
-        p.Likes.Any(l => l.UserId == me),
-        p.CreatedAt);
-
-    private UserDto UserToDto(Models.User u) =>
-        new(u.Id, u.Email, u.DisplayName, blob.ResolveSasUrl(u.AvatarUrl), u.Bio, u.CreatedAt);
 }

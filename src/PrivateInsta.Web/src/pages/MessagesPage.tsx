@@ -6,7 +6,7 @@ import { PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { chats as chatsApi, users as usersApi } from '../api';
 import { useAuth } from '../AuthContext';
 import { Avatar } from '../components/Avatar';
-import type { User } from '../types';
+import type { ChatGroup, User } from '../types';
 
 export function MessagesPage() {
   const { user: me } = useAuth();
@@ -22,7 +22,7 @@ export function MessagesPage() {
 
   const otherUsers = allUsers?.filter(u => u.id !== me?.id) ?? [];
 
-  const chatName = (g: typeof chatList extends undefined ? never : NonNullable<typeof chatList>[number]) => {
+  const chatName = (g: ChatGroup) => {
     if (g.name) return g.name;
     const others = g.members.filter(m => m.id !== me?.id);
     return others.map(m => m.displayName).join(', ') || 'Chat';

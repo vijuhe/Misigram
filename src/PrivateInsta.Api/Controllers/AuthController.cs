@@ -38,6 +38,6 @@ public class AuthController(AppDbContext db, BlobStorageService blob) : Controll
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var user = await db.Users.FindAsync(userId);
         if (user is null) return Unauthorized();
-        return Ok(new UserDto(user.Id, user.Email, user.DisplayName, blob.ResolveSasUrl(user.AvatarUrl), user.Bio, user.CreatedAt));
+        return Ok(user.ToDto(blob));
     }
 }

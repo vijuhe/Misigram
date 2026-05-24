@@ -8,6 +8,5 @@ public record MessageDto(Guid Id, Guid ChatGroupId, UserDto Sender, string Conte
 
 public record CreateChatRequest([MaxLength(100)] string? Name, IEnumerable<Guid> MemberIds);
 
-public record SendMessageRequest([Required][MaxLength(2000)] string Content, string? MediaUrl);
 
 public record AddMemberRequest(Guid UserId);

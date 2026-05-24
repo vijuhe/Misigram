@@ -33,6 +33,8 @@ export const users = {
   list: () => http.get<User[]>('/users').then(r => r.data),
   get: (id: string) => http.get<User>(`/users/${id}`).then(r => r.data),
   me: () => http.get<User>('/users/me').then(r => r.data),
+  posts: (id: string, page = 1, size = 20) =>
+    http.get<PagedResult<Post>>(`/users/${id}/posts`, { params: { page, size } }).then(r => r.data),
   update: (data: { displayName: string; bio?: string }) =>
     http.put<User>('/users/me', data).then(r => r.data),
   uploadAvatar: (file: File) => {
@@ -44,6 +46,7 @@ export const users = {
 
 export const chats = {
   list: () => http.get<ChatGroup[]>('/chats').then(r => r.data),
+  get: (id: string) => http.get<ChatGroup>(`/chats/${id}`).then(r => r.data),
   create: (name: string | null, memberIds: string[]) =>
     http.post<ChatGroup>('/chats', { name, memberIds }).then(r => r.data),
   messages: (id: string, page = 1, size = 50) =>

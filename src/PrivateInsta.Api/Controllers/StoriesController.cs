@@ -27,9 +27,7 @@ public class StoriesController(AppDbContext db, BlobStorageService blob) : Contr
 
         var grouped = stories
             .GroupBy(s => s.User)
-            .Select(g => new UserStoriesDto(
-                UserToDto(g.Key),
-                g.Select(s => new StoryDto(s.Id, UserToDto(s.User), blob.ResolveSasUrl(s.MediaUrl), s.MediaType, s.CreatedAt, s.ExpiresAt))));
+            .Select(g => new UserStoriesDto(g.Key.ToDto(blob), g.Select(s => s.ToDto(blob))));
 
         return Ok(grouped);
     }
@@ -60,8 +58,7 @@ public class StoriesController(AppDbContext db, BlobStorageService blob) : Contr
         await db.SaveChangesAsync();
         await db.Entry(story).Reference(s => s.User).LoadAsync();
 
-        return CreatedAtAction(nameof(GetActive), null,
-            new StoryDto(story.Id, UserToDto(story.User), blob.ResolveSasUrl(story.MediaUrl), story.MediaType, story.CreatedAt, story.ExpiresAt));
+        return CreatedAtAction(nameof(GetActive), null, story.ToDto(blob));
     }
 
     [HttpDelete("{id:guid}")]
@@ -77,6 +74,4 @@ public class StoriesController(AppDbContext db, BlobStorageService blob) : Contr
         return NoContent();
     }
 
-    private UserDto UserToDto(Models.User u) =>
-        new(u.Id, u.Email, u.DisplayName, blob.ResolveSasUrl(u.AvatarUrl), u.Bio, u.CreatedAt);
 }

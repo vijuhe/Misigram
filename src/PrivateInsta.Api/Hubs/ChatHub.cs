@@ -41,13 +41,7 @@ public class ChatHub(AppDbContext db, BlobStorageService blob) : Hub
         await db.SaveChangesAsync();
         await db.Entry(message).Reference(m => m.Sender).LoadAsync();
 
-        var dto = new MessageDto(
-            message.Id,
-            message.ChatGroupId,
-            new UserDto(message.Sender.Id, message.Sender.Email, message.Sender.DisplayName, blob.ResolveSasUrl(message.Sender.AvatarUrl), message.Sender.Bio, message.Sender.CreatedAt),
-            message.Content,
-            blob.ResolveSasUrl(message.MediaUrl),
-            message.CreatedAt);
+        var dto = message.ToDto(blob);
 
         await Clients.Group(chatGroupId.ToString()).SendAsync("ReceiveMessage", dto);
     }

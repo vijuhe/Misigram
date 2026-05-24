@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { users as usersApi, posts as postsApi } from '../api';
+import { users as usersApi } from '../api';
 import { Avatar } from '../components/Avatar';
 import { useAuth } from '../AuthContext';
 
@@ -9,9 +9,9 @@ export function ProfilePage() {
   const { user: me } = useAuth();
 
   const { data: user } = useQuery({ queryKey: ['user', id], queryFn: () => usersApi.get(id!), enabled: !!id });
-  const { data: feed } = useQuery({ queryKey: ['feed'], queryFn: () => postsApi.feed(1, 100) });
+  const { data: postsData } = useQuery({ queryKey: ['userPosts', id], queryFn: () => usersApi.posts(id!), enabled: !!id });
 
-  const userPosts = feed?.items.filter(p => p.author.id === id) ?? [];
+  const userPosts = postsData?.items ?? [];
 
   if (!user) return null;
 

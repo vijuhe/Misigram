@@ -15,7 +15,7 @@ export function NewPostModal({ onClose }: { onClose: () => void }) {
     const f = accepted[0];
     if (!f) return;
     setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f); });
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -60,7 +60,7 @@ export function NewPostModal({ onClose }: { onClose: () => void }) {
                 {file?.type.startsWith('video/')
                   ? <video src={preview} className="w-full max-h-64 object-cover" controls />
                   : <img src={preview} alt="preview" className="w-full max-h-64 object-cover" />}
-                <button onClick={() => { setFile(null); setPreview(null); }} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
+                <button onClick={() => { setFile(null); setPreview(p => { if (p) URL.revokeObjectURL(p); return null; }); }} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1">
                   <XMarkIcon className="w-4 h-4" />
                 </button>
               </div>

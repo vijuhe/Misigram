@@ -26,7 +26,20 @@ public class ChatsController(AppDbContext db, BlobStorageService blob) : Control
             .OrderByDescending(g => g.Messages.Max(m => (DateTime?)m.CreatedAt) ?? g.CreatedAt)
             .ToListAsync();
 
-        return Ok(chats.Select(ToDto));
+        return Ok(chats.Select(g => g.ToDto(blob)));
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<ChatGroupDto>> GetById(Guid id)
+    {
+        if (!await IsMemberAsync(id)) return Forbid();
+
+        var group = await db.ChatGroups
+            .Include(g => g.Members).ThenInclude(m => m.User)
+            .Include(g => g.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Sender)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        return group is null ? NotFound() : Ok(group.ToDto(blob));
     }
 
     [HttpPost]
@@ -42,7 +55,7 @@ public class ChatsController(AppDbContext db, BlobStorageService blob) : Control
         await db.SaveChangesAsync();
 
         await db.Entry(group).Collection(g => g.Members).Query().Include(m => m.User).LoadAsync();
-        return CreatedAtAction(nameof(GetMessages), new { id = group.Id }, ToDto(group));
+        return CreatedAtAction(nameof(GetMessages), new { id = group.Id }, group.ToDto(blob));
     }
 
     [HttpGet("{id:guid}/messages")]
@@ -59,7 +72,7 @@ public class ChatsController(AppDbContext db, BlobStorageService blob) : Control
             .Take(size)
             .ToListAsync();
 
-        return Ok(new PagedResult<MessageDto>(messages.Select(MsgToDto), total, page, size));
+        return Ok(new PagedResult<MessageDto>(messages.Select(m => m.ToDto(blob)), total, page, size));
     }
 
     [HttpPost("{id:guid}/members")]
@@ -81,20 +94,4 @@ public class ChatsController(AppDbContext db, BlobStorageService blob) : Control
     private async Task<bool> IsMemberAsync(Guid chatId) =>
         await db.ChatGroupMembers.AnyAsync(m => m.ChatGroupId == chatId && m.UserId == CurrentUserId);
 
-    private ChatGroupDto ToDto(ChatGroup g)
-    {
-        var last = g.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
-        return new ChatGroupDto(
-            g.Id,
-            g.Name,
-            g.Members.Select(m => UserToDto(m.User)),
-            last is null ? null : MsgToDto(last),
-            g.CreatedAt);
-    }
-
-    private MessageDto MsgToDto(Message m) =>
-        new(m.Id, m.ChatGroupId, UserToDto(m.Sender), m.Content, blob.ResolveSasUrl(m.MediaUrl), m.CreatedAt);
-
-    private UserDto UserToDto(Models.User u) =>
-        new(u.Id, u.Email, u.DisplayName, blob.ResolveSasUrl(u.AvatarUrl), u.Bio, u.CreatedAt);
 }
